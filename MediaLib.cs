@@ -58,6 +58,8 @@ namespace MediaLib
         private static int _lineThickness = 0;
         private static Font _font = null;
         private static float _nextTextPosition = 0;
+        private static List<Sprite> _sprites = new List<Sprite>();
+        private static Dictionary<string, Texture> _textureDict = new Dictionary<string, Texture>();
 
         // Interaction
         private static Key _keyPressed = Key.Unknown;
@@ -189,7 +191,6 @@ namespace MediaLib
                 _drawables.Add(rect);
             }
 
-
             Update();
         }
 
@@ -200,13 +201,17 @@ namespace MediaLib
         /// <param name="y1">The y-coordinate of the top-left corner</param>
         /// <param name="width">The width of the rectangle</param>
         /// <param name="height">The height of the rectangle</param>
-        public static void DrawRect(int x, int y, float width, float height)
+        public static void DrawRect(int x, int y, float width, float height, bool centerOrigin = false, float rotation = 0)
         {
             RectangleShape rect = new RectangleShape(new Vector2f(width, height));
+
+            if (centerOrigin) rect.Origin = new Vector2f(width / 2, height / 2);
             rect.Position = new Vector2f(x, y);
             rect.FillColor = _fillColor;
             rect.OutlineThickness = _lineThickness;
             rect.OutlineColor = _lineColor;
+            rect.Rotation = rotation;
+
             _drawables.Add(rect);
             Update();
         }
@@ -219,19 +224,18 @@ namespace MediaLib
         /// <param name="radius">The radius of the shape</param>
         /// <param name="centerOrigin">Whether the coordinate is the centre of the shape</param>
         /// <param name="numSides">Number of sides of polygon (0 for circle)</param>
-        public static void DrawCircle(int x1, int y1, int radius, bool centerOrigin = false, uint numSides = 0)
+        public static void DrawCircle(int x1, int y1, int radius, uint numSides = 0, bool centerOrigin = false, float rotation = 0)
         {
             CircleShape circle;
             if (numSides == 0) circle = new CircleShape(radius);
             else circle = new CircleShape(radius, numSides);
 
-            if (centerOrigin)
-                circle.Origin = new Vector2f(radius, radius);
-
+            if (centerOrigin) circle.Origin = new Vector2f(radius, radius);
             circle.Position = new Vector2f(x1, y1);
             circle.OutlineThickness = _lineThickness;
             circle.OutlineColor = _lineColor;
             circle.FillColor = _fillColor;
+            circle.Rotation = rotation; 
 
             _drawables.Add(circle);
             Update();
@@ -243,13 +247,18 @@ namespace MediaLib
         /// <param name="x">The x-coordinate of where to start drawing text</param>
         /// <param name="y">The y-coordinate of where to start drawing text</param>
         /// <param name="message">The text to draw</param>
-        public static void DrawText(object message, int x, int y, uint charSize = 18, string fontPath = null)
+        public static void DrawText(object message, int x, int y, uint charSize = 18, string fontPath = null, bool centerOrigin = false, float rotation = 0)
         {
             if (_window == null) throw new InvalidOperationException("Window not created!");
             if (_font == null && fontPath == null) throw new InvalidOperationException("No font set!");
+
             Text text = new Text(message.ToString(), fontPath == null ? _font : new Font(fontPath), charSize);
+
+            if (centerOrigin) text.Origin = new Vector2f(text.GetGlobalBounds().Width / 2, text.GetGlobalBounds().Height / 2);
             text.Position = new Vector2f(x, y);
             text.FillColor = _fillColor;
+            text.Rotation = rotation;
+
             _drawables.Add(text);
             Update();
         }
@@ -262,10 +271,13 @@ namespace MediaLib
         {
             if (_window == null) throw new InvalidOperationException("Window not created!");
             if (_font == null && fontPath == null) throw new InvalidOperationException("No font set!");
+
             Text text = new Text(message.ToString(), fontPath == null ? _font : new Font(fontPath), charSize);
+
             text.Position = new Vector2f(0, _nextTextPosition);
-            _nextTextPosition += text.GetGlobalBounds().Height + 8;
             text.FillColor = _fillColor;
+
+            _nextTextPosition += text.GetGlobalBounds().Height + 8;
             _drawables.Add(text);
             Update();
         }
@@ -278,15 +290,19 @@ namespace MediaLib
         /// <param name="y">The y-coordinate of the top-left corner of the image</param>
         /// <param name="width">The width of the image</param>
         /// <param name="height">The height of the image</param>
-        public static void DrawImage(string filePath, int x = 0, int y = 0, int width = 0, int height = 0)
+        public static void DrawImage(string filePath, int x = 0, int y = 0, int width = 0, int height = 0, bool centerOrigin = false, float rotation = 0)
         {
-            Sprite sprite = new Sprite(new Texture(filePath));
-            if (width > 0 && height > 0)
-            {
-                sprite.Scale = new Vector2f(width / sprite.GetGlobalBounds().Width, height / sprite.GetGlobalBounds().Height);
-            }
+            if (!_textureDict.ContainsKey(filePath)) _textureDict[filePath] = new Texture(filePath);
+            Sprite sprite = new Sprite(_textureDict[filePath]);
+
+            if (centerOrigin) sprite.Origin = new Vector2f(sprite.GetGlobalBounds().Width / 2, sprite.GetGlobalBounds().Height / 2);
+            sprite.Rotation = rotation;
+            if (width > 0 && height > 0) sprite.Scale = new Vector2f(width / sprite.GetGlobalBounds().Width, height / sprite.GetGlobalBounds().Height);
             sprite.Position = new Vector2f(x, y);
+
+            _sprites.Add(sprite);
             _drawables.Add(sprite);
+            Update();
         }
 
         /// <summary>
@@ -301,9 +317,11 @@ namespace MediaLib
                 _sounds[0].Dispose();
                 _sounds.RemoveAt(0);
             }
+
             Sound sound = new Sound(new SoundBuffer(filePath));
             sound.Volume = volume;
             sound.Pitch = 1;
+
             _sounds.Add(sound);
             sound.Play();
         }
@@ -388,11 +406,21 @@ namespace MediaLib
         /// <summary>
         /// Clear all drawable items from the window
         /// </summary>
-        public static void Clear()
+        public static void Clear(bool update = true)
         {
             _nextTextPosition = 0;
+            foreach (Sprite sprite in _sprites)
+            {
+                sprite.Dispose();
+            }
+            foreach (KeyValuePair<string, Texture> pair in _textureDict)
+            {
+                pair.Value.Dispose();
+            }
+            _textureDict.Clear();
+            _sprites.Clear();
             _drawables.Clear();
-            Update();
+            if (update) Update();
         }
 
         /// <summary>
@@ -419,7 +447,6 @@ namespace MediaLib
         private static void OnClose(object sender, EventArgs eventArgs)
         {
             ((RenderWindow)sender).Close();
-            //System.Environment.Exit(0);
         }
 
         /// <summary>
