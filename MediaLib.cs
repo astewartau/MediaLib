@@ -71,6 +71,9 @@ namespace MediaLib
         private static List<Sound> _sounds = new List<Sound>();
         private static Music _music = null;
 
+        /// <summary>
+        /// Constructor to load the default font
+        /// </summary>
         static Window()
         {
             try
@@ -136,9 +139,10 @@ namespace MediaLib
         /// <param name="r">Red color component</param>
         /// <param name="g">Green color component</param>
         /// <param name="b">Blue color component</param>
-        public static void SetFillColor(byte r, byte g, byte b)
+        /// <param name="a">Alpha component</param>
+        public static void SetFillColor(byte r, byte g, byte b, byte a = 255)
         {
-            _fillColor = new Color(r, g, b);
+            _fillColor = new Color(r, g, b, a);
         }
 
         /// <summary>
@@ -147,9 +151,10 @@ namespace MediaLib
         /// <param name="r">Red color component</param>
         /// <param name="g">Green color component</param>
         /// <param name="b">Blue color component</param>
-        public static void SetLineColor(byte r, byte g, byte b)
+        /// <param name="a">Alpha component</param>
+        public static void SetLineColor(byte r, byte g, byte b, byte a = 255)
         {
-            _lineColor = new Color(r, g, b);
+            _lineColor = new Color(r, g, b, a);
         }
 
         /// <summary>
@@ -211,10 +216,12 @@ namespace MediaLib
         /// <summary>
         /// Draw a rectangle with a width and height
         /// </summary>
-        /// <param name="x1">The x-coordinate of the top-left corner</param>
-        /// <param name="y1">The y-coordinate of the top-left corner</param>
+        /// <param name="x">The x-coordinate of the top-left corner</param>
+        /// <param name="y">The y-coordinate of the top-left corner</param>
         /// <param name="width">The width of the rectangle</param>
         /// <param name="height">The height of the rectangle</param>
+        /// <param name="centerOrigin">Whether the coordinate is the centre of the rectangle</param>
+        /// <param name="rotation">Rotation of the rectangle in degrees</param>
         public static void DrawRect(int x, int y, float width, float height, bool centerOrigin = false, float rotation = 0)
         {
             RectangleShape rect = new RectangleShape(new Vector2f(width, height));
@@ -236,8 +243,9 @@ namespace MediaLib
         /// <param name="x">The x-coordinate of the shape</param>
         /// <param name="y">The y-coordinate of the shape</param>
         /// <param name="radius">The radius of the shape</param>
-        /// <param name="centerOrigin">Whether the coordinate is the centre of the shape</param>
         /// <param name="numSides">Number of sides of polygon (0 for circle)</param>
+        /// <param name="centerOrigin">Whether the coordinate is the centre of the shape</param>
+        /// <param name="rotation">Rotation of the shape in degrees</param>
         public static void DrawCircle(int x, int y, int radius, int numSides = 0, bool centerOrigin = false, float rotation = 0)
         {
             CircleShape circle;
@@ -258,10 +266,15 @@ namespace MediaLib
         /// <summary>
         /// Draw a string of text at a coordinate
         /// </summary>
+        /// <param name="message">The text to draw</param>
         /// <param name="x">The x-coordinate of where to start drawing text</param>
         /// <param name="y">The y-coordinate of where to start drawing text</param>
-        /// <param name="message">The text to draw</param>
-        public static void DrawText(object message, int x, int y, uint charSize = 18, string fontPath = null, bool centerOrigin = false, float rotation = 0)
+        /// <param name="charSize">The font size</param>
+        /// <param name="fontPath">The path to the font file to use</param>
+        /// <param name="centerOrigin">Whether the coordinate is the centre of the text</param>
+        /// <param name="rotation">Rotation of the text in degrees</param>
+        /// <param name="alpha">An alpha value imposed on the resultant text</param>    
+        public static void DrawText(object message, int x, int y, uint charSize = 18, string fontPath = null, bool centerOrigin = false, float rotation = 0, byte alpha = 255)
         {
             if (_window == null) throw new InvalidOperationException("Window not created!");
             if (_font == null && fontPath == null) throw new InvalidOperationException("No font set!");
@@ -272,6 +285,7 @@ namespace MediaLib
             text.Position = new Vector2f(x, y);
             text.FillColor = _fillColor;
             text.Rotation = rotation;
+            if (alpha != 255) text.FillColor = new Color(text.FillColor.R, text.FillColor.G, text.FillColor.B, alpha);
 
             _drawables.Add(text);
             Update();
@@ -281,7 +295,10 @@ namespace MediaLib
         /// Draw a string of text at the top-left of the window
         /// </summary>
         /// <param name="message">The text to draw</param>
-        public static void DrawText(object message, uint charSize = 18, string fontPath = null)
+        /// <param name="charSize">The font size</param>
+        /// <param name="fontPath">The path to the font file to use</param>
+        /// <param name="alpha">An alpha value imposed on the resultant text</param>
+        public static void DrawText(object message, uint charSize = 18, string fontPath = null, byte alpha = 255)
         {
             if (_window == null) throw new InvalidOperationException("Window not created!");
             if (_font == null && fontPath == null) throw new InvalidOperationException("No font set!");
@@ -290,6 +307,7 @@ namespace MediaLib
 
             text.Position = new Vector2f(0, _nextTextPosition);
             text.FillColor = _fillColor;
+            if (alpha != 255) text.FillColor = new Color(text.FillColor.R, text.FillColor.G, text.FillColor.B, alpha);
 
             _nextTextPosition += text.GetGlobalBounds().Height + 8;
             _drawables.Add(text);
@@ -304,7 +322,10 @@ namespace MediaLib
         /// <param name="y">The y-coordinate of the top-left corner of the image</param>
         /// <param name="width">The width of the image</param>
         /// <param name="height">The height of the image</param>
-        public static void DrawImage(string filePath, int x = 0, int y = 0, int width = 0, int height = 0, bool centerOrigin = false, float rotation = 0)
+        /// <param name="centerOrigin">Whether the coordinate is the centre of the image</param>
+        /// <param name="rotation">Rotation of the image in degrees</param>
+        /// <param name="alpha">An imposed alpha value on the resultant image</param>
+        public static void DrawImage(string filePath, int x = 0, int y = 0, int width = 0, int height = 0, bool centerOrigin = false, float rotation = 0, byte alpha = 255)
         {
             if (!_textureDict.ContainsKey(filePath)) _textureDict[filePath] = new Texture(filePath);
             Sprite sprite = new Sprite(_textureDict[filePath]);
@@ -313,6 +334,7 @@ namespace MediaLib
             sprite.Rotation = rotation;
             if (width > 0 && height > 0) sprite.Scale = new Vector2f(width / sprite.GetGlobalBounds().Width, height / sprite.GetGlobalBounds().Height);
             sprite.Position = new Vector2f(x, y);
+            if (alpha != 255) sprite.Color = new Color(sprite.Color.R, sprite.Color.G, sprite.Color.B, alpha);
 
             _sprites.Add(sprite);
             _drawables.Add(sprite);
@@ -446,6 +468,7 @@ namespace MediaLib
         /// <summary>
         /// Clear all drawable items from the window
         /// </summary>
+        /// <param name="update">Whether or not to re-draw immediately</param>
         public static void Clear(bool update = true)
         {
             _nextTextPosition = 0;
