@@ -51,10 +51,11 @@ namespace MediaLib
         public static bool IsOpen => _window == null ? false : _window.IsOpen;
 
         // Drawing
+        private const string DEFAULT_FONT = "FantasqueSansMono-Regular.ttf";
         private static Color _backgroundColor = Color.Black;
         private static List<Drawable> _drawables = new List<Drawable>();
         private static Color _fillColor = Color.White;
-        private static Color _lineColor = Color.Black;
+        private static Color _lineColor = Color.White;
         private static int _lineThickness = 0;
         private static Font _font = null;
         private static float _nextTextPosition = 0;
@@ -64,10 +65,22 @@ namespace MediaLib
         // Interaction
         private static Key _keyPressed = Key.Unknown;
         private static Vector2i? _clickPos = null;
+        private static Vector2i? _mousePos = null;
 
         // Audio
         private static List<Sound> _sounds = new List<Sound>();
         private static Music _music = null;
+
+        static Window()
+        {
+            try
+            {
+                _font = new Font($"assets/fonts/{DEFAULT_FONT}");
+            }
+            catch (Exception)
+            {
+            }
+        }
 
         /// <summary>
         /// Create a new graphics window with the specified dimensions and title
@@ -99,6 +112,7 @@ namespace MediaLib
             _window.KeyReleased += new EventHandler<KeyEventArgs>(OnKeyRelease);
             _window.MouseButtonPressed += new EventHandler<MouseButtonEventArgs>(OnMouseButtonPress);
             _window.MouseWheelScrolled += new EventHandler<MouseWheelScrollEventArgs>(OnMouseWheelScroll);
+            _window.MouseMoved += new EventHandler<MouseMoveEventArgs>(OnMouseMove);
 
             _window.Clear(_backgroundColor);
             _window.Display();
@@ -219,23 +233,23 @@ namespace MediaLib
         /// <summary>
         /// Draw a circle or polygon at a coordinate with a radius
         /// </summary>
-        /// <param name="x1">The x-coordinate of the shape</param>
-        /// <param name="y1">The y-coordinate of the shape</param>
+        /// <param name="x">The x-coordinate of the shape</param>
+        /// <param name="y">The y-coordinate of the shape</param>
         /// <param name="radius">The radius of the shape</param>
         /// <param name="centerOrigin">Whether the coordinate is the centre of the shape</param>
         /// <param name="numSides">Number of sides of polygon (0 for circle)</param>
-        public static void DrawCircle(int x1, int y1, int radius, uint numSides = 0, bool centerOrigin = false, float rotation = 0)
+        public static void DrawCircle(int x, int y, int radius, int numSides = 0, bool centerOrigin = false, float rotation = 0)
         {
             CircleShape circle;
             if (numSides == 0) circle = new CircleShape(radius);
-            else circle = new CircleShape(radius, numSides);
+            else circle = new CircleShape(radius, (uint)numSides);
 
             if (centerOrigin) circle.Origin = new Vector2f(radius, radius);
-            circle.Position = new Vector2f(x1, y1);
+            circle.Position = new Vector2f(x, y);
             circle.OutlineThickness = _lineThickness;
             circle.OutlineColor = _lineColor;
             circle.FillColor = _fillColor;
-            circle.Rotation = rotation; 
+            circle.Rotation = rotation;
 
             _drawables.Add(circle);
             Update();
@@ -404,6 +418,32 @@ namespace MediaLib
         }
 
         /// <summary>
+        /// Pause execution and return the next mouse location
+        /// </summary>
+        /// <returns>An integer array containing the x,y position of the mouse after a click</returns>
+        public static int[] GetMouseMoveLocation()
+        {
+            if (_window == null) throw new InvalidOperationException("Window not created!");
+            while (_window.IsOpen && _mousePos == null)
+            {
+                Update();
+            }
+
+            int[] result;
+            if (_window.IsOpen)
+            {
+                result = new int[] { _mousePos.Value.X, _mousePos.Value.Y };
+                _mousePos = null;
+            }
+            else
+            {
+                result = new int[] { 0, 0 };
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Clear all drawable items from the window
         /// </summary>
         public static void Clear(bool update = true)
@@ -479,6 +519,14 @@ namespace MediaLib
         private static void OnMouseWheelScroll(object sender, MouseWheelScrollEventArgs eventArgs)
         {
             _clickPos = new Vector2i(eventArgs.X, eventArgs.Y);
+        }
+
+        /// <summary>
+        /// OnMouseMove event-handler
+        /// </summary>
+        private static void OnMouseMove(object sender, MouseMoveEventArgs eventArgs)
+        {
+            _mousePos = new Vector2i(eventArgs.X, eventArgs.Y);
         }
     }
 
