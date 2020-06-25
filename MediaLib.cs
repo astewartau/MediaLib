@@ -195,8 +195,8 @@ namespace MediaLib
             }
             else
             {
-                // a line with thickness is actually a rectangle
-                // with a length and height determined by pythagoras and line thickness
+                // a line with thickness is actually a rectangle with a length determined
+                // by pythagoras and a height determined by line thickness
                 RectangleShape rect = new RectangleShape(
                     size: new Vector2f(
                         x: (float)Math.Sqrt(Math.Pow(Math.Abs(x2 - x1), 2) + Math.Pow(Math.Abs(y2 - y1), 2)),
@@ -205,10 +205,10 @@ namespace MediaLib
                 );
 
                 rect.FillColor = _lineColor;
-                rect.Position = new Vector2f(x1, y1);
+                rect.Position = new Vector2f(x1 + _lineThickness/2, y1 - _lineThickness/2);
 
                 // cartesian space calculation of vector angle
-                rect.Rotation = (float)(-Math.Atan2((-y2) - (-y1), x2 - x1) * 180 / Math.PI);
+                rect.Rotation = (float)(-Math.Atan2(y1 - y2, x2 - x1) * 180 / Math.PI);
                 _drawables.Add(rect);
             }
 
