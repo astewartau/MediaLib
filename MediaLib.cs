@@ -24,6 +24,7 @@ namespace MediaLib
         /// <returns>A random integer between min and max</returns>
         public static int RandInt(int min, int max)
         {
+            if (min > max) throw new ArgumentException("Minimum cannot be greater than maximum");
             return _rng.Next(min, max + 1);
         }
 
@@ -33,8 +34,9 @@ namespace MediaLib
         /// <param name="min">Minimum possible random number</param>
         /// <param name="max">Maximum possible random number</param>
         /// <returns>A random double between min and max</returns>
-        public static double RandDouble(double min, double max)
+        public static double RandDouble(double min = 0, double max = 1)
         {
+            if (min > max) throw new ArgumentException("Minimum cannot be greater than maximum");
             return _rng.NextDouble() * Math.Abs(max - min) + min;
         }
     }
